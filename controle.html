@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Acesso Portal Celpe</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f4f4f9; }
+        .container { margin-top: 100px; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .disponivel { background-color: #2ecc71; color: white; }
+        .indisponivel { background-color: #e74c3c; color: white; }
+        button { padding: 15px 30px; font-size: 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #btnSair { background: #34495e; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="statusCard" class="container disponivel">
+        <h1 id="statusTexto">ACESSO DISPONÍVEL</h1>
+        <button id="btnEntrar" onclick="mudarStatus(true)">ENTRAR NO ACESSO</button>
+        <button id="btnSair" onclick="mudarStatus(false)" style="display:none;">SAIR / LIBERAR</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // COLE AS SUAS CONFIGURAÇÕES AQUI ABAIXO
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com", // Já peguei da sua imagem!
+            projectId: "controle-b334e",
+            storageBucket: "controle-b334e.appspot.com",
+            messagingSenderId: "SEU_ID",
+            appId: "SEU_ID_APP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const statusRef = ref(db, 'portal/acessoX');
+
+        window.mudarStatus = (valor) => {
+            set(statusRef, valor);
+        };
+
+        onValue(statusRef, (snapshot) => {
+            const ocupado = snapshot.val();
+            const card = document.getElementById('statusCard');
+            const texto = document.getElementById('statusTexto');
+            const btnEntrar = document.getElementById('btnEntrar');
+            const btnSair = document.getElementById('btnSair');
+
+            if (ocupado) {
+                card.className = "container indisponivel";
+                texto.innerText = "ACESSO INDISPONÍVEL";
+                btnEntrar.style.display = "none";
+                btnSair.style.display = "inline-block";
+            } else {
+                card.className = "container disponivel";
+                texto.innerText = "ACESSO DISPONÍVEL";
+                btnEntrar.style.display = "inline-block";
+                btnSair.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
