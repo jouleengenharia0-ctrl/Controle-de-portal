@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Acessos Joule Eco</title>
+    <title>Painel de Acessos Joule Eco</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -14,7 +14,7 @@
         }
 
         body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             background: #f0f2f5; 
             margin: 0; 
             padding: 20px; 
@@ -23,7 +23,6 @@
 
         h1 { text-align: center; margin-bottom: 30px; }
 
-        /* Container de Perfil */
         .perfil-container { 
             background: white; 
             padding: 20px; 
@@ -32,8 +31,7 @@
             margin-bottom: 30px; 
             text-align: center; 
             max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 0 auto 30px auto;
         }
 
         select { 
@@ -43,10 +41,8 @@
             width: 100%; 
             max-width: 300px; 
             border: 2px solid #ddd; 
-            outline: none;
         }
 
-        /* Grid de Cards */
         .grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
@@ -62,12 +58,11 @@
             position: relative; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
             border-top: 8px solid var(--disponivel); 
-            transition: transform 0.2s, box-shadow 0.2s; 
+            transition: 0.3s; 
         }
 
         .card.busy { border-top-color: var(--ocupado); }
 
-        /* Sino de Alerta */
         .btn-sino { 
             position: absolute; 
             top: 15px; 
@@ -76,14 +71,13 @@
             border: none; 
             background: none; 
             font-size: 1.3rem; 
-            transition: 0.2s; 
+            color: var(--alerta);
+            display: none; 
         }
 
-        .card.busy .btn-sino { color: var(--alerta); display: block; }
-        .card.free .btn-sino { display: none; }
-        .btn-sino:hover { transform: scale(1.2); }
+        .card.busy .btn-sino { display: block; }
 
-        .portal-nome { font-size: 1.4rem; font-weight: bold; margin: 0; color: #333; }
+        .portal-nome { font-size: 1.4rem; font-weight: bold; margin: 0; }
         .acesso-email { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
 
         .status-badge { 
@@ -97,51 +91,36 @@
         .status-badge.free { background: #eafaf1; color: var(--disponivel); }
         .status-badge.busy { background: #fdedec; color: var(--ocupado); }
 
-        .user-info { 
-            font-style: italic; 
-            font-size: 0.95rem; 
-            margin-bottom: 20px; 
-            height: 20px; 
-            color: var(--dark);
-            font-weight: 600;
-        }
+        .user-info { font-style: italic; font-size: 0.95rem; margin-bottom: 20px; height: 20px; font-weight: 600; }
 
-        /* Botões */
         button.main-btn { 
             width: 100%; 
             padding: 14px; 
             border: none; 
             border-radius: 8px; 
             font-weight: bold; 
-            font-size: 1rem;
             cursor: pointer; 
-            transition: 0.2s;
         }
 
         .btn-entrar { background: var(--disponivel); color: white; }
-        .btn-entrar:hover { background: #219150; }
         .btn-sair { background: var(--dark); color: white; }
-        .btn-sair:hover { background: #1a252f; }
 
-        /* Animação Vibrar */
         @keyframes tremer {
             0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
             20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
             100% { transform: translate(1px, 1px) rotate(0deg); }
         }
-        .animar-alerta { animation: tremer 0.5s; animation-iteration-count: 4; }
+        .animar-alerta { animation: tremer 0.2s; animation-iteration-count: 5; }
     </style>
 </head>
 <body>
 
-    <h1>Painel de Acessos Joule Eco</h1>
+    <h1>Painel Joule Eco</h1>
 
     <div class="perfil-container">
-        <label><strong>Selecione seu nome para começar:</strong></label><br><br>
+        <label><strong>Quem está acessando?</strong></label><br><br>
         <select id="selectPerfil">
-            <option value="">-- Colaborador --</option>
+            <option value="">-- Selecione seu Nome --</option>
             <option value="Gabriel">Gabriel</option>
             <option value="Weslly">Weslly</option>
             <option value="Vitor">Vitor</option>
@@ -154,17 +133,15 @@
         </select>
     </div>
 
-    <div class="grid" id="portalGrid">
-        </div>
+    <div class="grid" id="portalGrid"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Identificador único para esta aba evitar que o próprio som toque para quem clicou
         const meuIdNavegador = Math.random().toString(36).substring(7);
+        let ultimoAlertaProcessado = 0;
 
-        // CONFIGURAÇÃO DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
             authDomain: "controle-b334e.firebaseapp.com",
@@ -178,117 +155,98 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const listaPortais = [
+        const portais = [
             { id: 'celpe-joule', nome: 'CELPE', email: 'joule@joule.eco.br' },
             { id: 'celpe-portal', nome: 'CELPE', email: 'portal@joule.eco.br' },
             { id: 'cosern-joule', nome: 'COSERN', email: 'joule@joule.eco.br' },
             { id: 'cosern-portal', nome: 'COSERN', email: 'portal@joule.eco.br' }
         ];
 
-        // 1. Renderizar os cards na tela
         const gridElement = document.getElementById('portalGrid');
-        listaPortais.forEach(p => {
+        portais.forEach(p => {
             gridElement.innerHTML += `
-                <div id="card-${p.id}" class="card free">
-                    <button class="btn-sino" title="Alertar esquecimento" onclick="enviarAlerta('${p.id}', '${p.nome}')">
+                <div id="card-${p.id}" class="card">
+                    <button class="btn-sino" onclick="enviarAlerta('${p.id}', '${p.nome}')">
                         <i class="fa-solid fa-bell"></i>
                     </button>
                     <p class="portal-nome">${p.nome}</p>
                     <p class="acesso-email">${p.email}</p>
-                    <div id="badge-${p.id}" class="status-badge free">LIVRE</div>
+                    <div id="badge-${p.id}" class="status-badge"></div>
                     <div id="user-${p.id}" class="user-info"></div>
-                    <button id="btn-${p.id}" class="main-btn btn-entrar" onclick="gerenciarAcesso('${p.id}')">Entrar</button>
-                </div>
-            `;
+                    <button id="btn-${p.id}" class="main-btn" onclick="gerenciarAcesso('${p.id}')"></button>
+                </div>`;
         });
 
-        // 2. Lógica de Entrar/Sair
         window.gerenciarAcesso = (id) => {
-            const nomeLogado = document.getElementById('selectPerfil').value;
-            const btnAcao = document.getElementById(`btn-${id}`);
-            
-            if (!nomeLogado && btnAcao.innerText === "Entrar") {
-                alert("Por favor, selecione seu nome no topo da página.");
-                return;
-            }
+            const perfil = document.getElementById('selectPerfil').value;
+            const btn = document.getElementById(`btn-${id}`);
+            if (!perfil && btn.innerText === "Entrar") return alert("Selecione seu nome!");
 
-            const refNoBanco = ref(db, 'portais/' + id);
-            
-            if (btnAcao.innerText === "Entrar") {
-                set(refNoBanco, { ocupado: true, usuario: nomeLogado });
+            const statusRef = ref(db, 'portais/' + id);
+            if (btn.innerText === "Entrar") {
+                set(statusRef, { ocupado: true, usuario: perfil });
             } else {
-                set(refNoBanco, { ocupado: false, usuario: "" });
+                set(statusRef, { ocupado: false, usuario: "" });
             }
         };
 
-        // 3. Função de Alerta (Sino)
-        window.enviarAlerta = (idCard, nomePortal) => {
-            const quemChamou = document.getElementById('selectPerfil').value || "Alguém";
+        window.enviarAlerta = (id, portal) => {
             set(ref(db, 'alerta_vaga'), {
-                idOrigem: idCard,
+                idOrigem: id,
                 quemEnviou: meuIdNavegador,
-                texto: `${quemChamou} está solicitando o portal ${nomePortal}`,
-                timestamp: serverTimestamp()
+                timestamp: Date.now()
             });
         };
 
-        // 4. Ouvir mudanças nos Portais
-        listaPortais.forEach(p => {
-            onValue(ref(db, 'portais/' + p.id), (snapshot) => {
-                const info = snapshot.val() || { ocupado: false, usuario: "" };
+        portais.forEach(p => {
+            onValue(ref(db, 'portais/' + p.id), (snap) => {
+                const info = snap.val() || { ocupado: false, usuario: "" };
                 const card = document.getElementById(`card-${p.id}`);
                 const badge = document.getElementById(`badge-${p.id}`);
-                const userArea = document.getElementById(`user-${p.id}`);
+                const userText = document.getElementById(`user-${p.id}`);
                 const btn = document.getElementById(`btn-${p.id}`);
 
                 if (info.ocupado) {
                     card.className = "card busy";
                     badge.className = "status-badge busy";
                     badge.innerText = "OCUPADO";
-                    userArea.innerText = "Em uso por: " + info.usuario;
+                    userText.innerText = "Em uso por: " + info.usuario;
                     btn.innerText = "Sair";
                     btn.className = "main-btn btn-sair";
                 } else {
                     card.className = "card free";
                     badge.className = "status-badge free";
                     badge.innerText = "LIVRE";
-                    userArea.innerText = "";
+                    userText.innerText = "";
                     btn.innerText = "Entrar";
                     btn.className = "main-btn btn-entrar";
                 }
             });
         });
 
-        // 5. Função de Som (Beep)
-        const dispararBeep = () => {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = 880; 
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.8);
-            osc.stop(audioCtx.currentTime + 0.8);
+        const tocarBeep = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.connect(g); g.connect(ctx.destination);
+            osc.frequency.value = 880; osc.start();
+            g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.8);
+            osc.stop(ctx.currentTime + 0.8);
         };
 
-        // 6. Ouvir ALERTAS (com filtro para não apitar no próprio)
-        onValue(ref(db, 'alerta_vaga'), (snapshot) => {
-            const alerta = snapshot.val();
-            if (!alerta) return;
+        onValue(ref(db, 'alerta_vaga'), (snap) => {
+            const alerta = snap.val();
+            if (!alerta || alerta.timestamp <= ultimoAlertaProcessado) return;
+            ultimoAlertaProcessado = alerta.timestamp;
 
-            // Se fui eu que cliquei, não faz nada
-            if (alerta.quemEnviou === meuIdNavegador) return;
-
-            // Se for outra pessoa:
-            dispararBeep();
-            if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-
-            const cardAlvo = document.getElementById(`card-${alerta.idOrigem}`);
-            if (cardAlvo) {
-                cardAlvo.classList.add('animar-alerta');
-                setTimeout(() => cardAlvo.classList.remove('animar-alerta'), 2000);
+            if (alerta.quemEnviou !== meuIdNavegador) {
+                tocarBeep();
+                if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+                const card = document.getElementById(`card-${alerta.idOrigem}`);
+                if (card) {
+                    card.classList.add('animar-alerta');
+                    setTimeout(() => card.classList.remove('animar-alerta'), 2000);
+                }
             }
         });
     </script>
