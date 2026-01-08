@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Acessos Joule</title>
+    <title>Controle de Acessos Joule Eco</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -12,37 +12,118 @@
             --alerta: #f39c12;
             --dark: #2c3e50;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: var(--dark); }
-        h1 { text-align: center; }
-        
-        .perfil-container { background: white; padding: 20px; border-radius: 10px; shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }
-        select { padding: 10px; font-size: 16px; border-radius: 5px; width: 250px; border: 2px solid #ddd; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        
-        .card { background: white; border-radius: 12px; padding: 20px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 8px solid var(--disponivel); transition: 0.3s; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: #f0f2f5; 
+            margin: 0; 
+            padding: 20px; 
+            color: var(--dark); 
+        }
+
+        h1 { text-align: center; margin-bottom: 30px; }
+
+        /* Container de Perfil */
+        .perfil-container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            margin-bottom: 30px; 
+            text-align: center; 
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        select { 
+            padding: 12px; 
+            font-size: 16px; 
+            border-radius: 8px; 
+            width: 100%; 
+            max-width: 300px; 
+            border: 2px solid #ddd; 
+            outline: none;
+        }
+
+        /* Grid de Cards */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 20px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+
+        .card { 
+            background: white; 
+            border-radius: 15px; 
+            padding: 25px; 
+            position: relative; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            border-top: 8px solid var(--disponivel); 
+            transition: transform 0.2s, box-shadow 0.2s; 
+        }
+
         .card.busy { border-top-color: var(--ocupado); }
-        
-        /* Estilo do Sino de Alerta */
-        .btn-sino { position: absolute; top: 15px; right: 15px; cursor: pointer; color: #ccc; font-size: 1.2rem; transition: 0.2s; border: none; background: none; }
+
+        /* Sino de Alerta */
+        .btn-sino { 
+            position: absolute; 
+            top: 15px; 
+            right: 15px; 
+            cursor: pointer; 
+            border: none; 
+            background: none; 
+            font-size: 1.3rem; 
+            transition: 0.2s; 
+        }
+
         .card.busy .btn-sino { color: var(--alerta); display: block; }
         .card.free .btn-sino { display: none; }
-        .btn-sino:hover { transform: scale(1.2); color: #e67e22; }
+        .btn-sino:hover { transform: scale(1.2); }
 
-        .portal-nome { font-size: 1.2rem; font-weight: bold; margin: 0; }
-        .acesso-email { color: #666; font-size: 0.85rem; margin-bottom: 15px; }
-        
-        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 15px; }
+        .portal-nome { font-size: 1.4rem; font-weight: bold; margin: 0; color: #333; }
+        .acesso-email { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
+
+        .status-badge { 
+            display: inline-block; 
+            padding: 6px 15px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+        }
         .status-badge.free { background: #eafaf1; color: var(--disponivel); }
         .status-badge.busy { background: #fdedec; color: var(--ocupado); }
 
-        .user-info { font-style: italic; font-size: 0.9rem; margin-bottom: 15px; height: 20px; font-weight: bold; }
+        .user-info { 
+            font-style: italic; 
+            font-size: 0.95rem; 
+            margin-bottom: 20px; 
+            height: 20px; 
+            color: var(--dark);
+            font-weight: 600;
+        }
 
-        button.main-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        /* Botões */
+        button.main-btn { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem;
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+
         .btn-entrar { background: var(--disponivel); color: white; }
+        .btn-entrar:hover { background: #219150; }
         .btn-sair { background: var(--dark); color: white; }
-        
-        /* Animação de tremer quando recebe alerta */
+        .btn-sair:hover { background: #1a252f; }
+
+        /* Animação Vibrar */
         @keyframes tremer {
             0% { transform: translate(1px, 1px) rotate(0deg); }
             10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -55,12 +136,12 @@
 </head>
 <body>
 
-    <h1>Painel Joule Eco</h1>
+    <h1>Painel de Acessos Joule Eco</h1>
 
     <div class="perfil-container">
-        <label><strong>Quem é você?</strong></label><br>
+        <label><strong>Selecione seu nome para começar:</strong></label><br><br>
         <select id="selectPerfil">
-            <option value="">Selecione seu nome...</option>
+            <option value="">-- Colaborador --</option>
             <option value="Gabriel">Gabriel</option>
             <option value="Weslly">Weslly</option>
             <option value="Vitor">Vitor</option>
@@ -71,7 +152,6 @@
             <option value="Cristiane">Cristiane</option>
             <option value="Ednalda">Ednalda</option>
         </select>
-        <p style="font-size: 0.8rem; color: #888;">Clique no sino <i class="fa-solid fa-bell"></i> para alertar quem esqueceu de sair.</p>
     </div>
 
     <div class="grid" id="portalGrid">
@@ -79,124 +159,138 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // Identificador único para esta aba evitar que o próprio som toque para quem clicou
+        const meuIdNavegador = Math.random().toString(36).substring(7);
+
+        // CONFIGURAÇÃO DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
             authDomain: "controle-b334e.firebaseapp.com",
             databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com",
             projectId: "controle-b334e",
             storageBucket: "controle-b334e.appspot.com",
-            messagingSenderId: "SEU_SENDER_ID",
+            messagingSenderId: "SEU_ID",
             appId: "SEU_APP_ID"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const portais = [
+        const listaPortais = [
             { id: 'celpe-joule', nome: 'CELPE', email: 'joule@joule.eco.br' },
             { id: 'celpe-portal', nome: 'CELPE', email: 'portal@joule.eco.br' },
             { id: 'cosern-joule', nome: 'COSERN', email: 'joule@joule.eco.br' },
             { id: 'cosern-portal', nome: 'COSERN', email: 'portal@joule.eco.br' }
         ];
 
-        // Criar cards na tela
-        const grid = document.getElementById('portalGrid');
-        portais.forEach(p => {
-            grid.innerHTML += `
+        // 1. Renderizar os cards na tela
+        const gridElement = document.getElementById('portalGrid');
+        listaPortais.forEach(p => {
+            gridElement.innerHTML += `
                 <div id="card-${p.id}" class="card free">
-                    <button class="btn-sino" onclick="enviarAlerta('${p.id}', '${p.nome}')">
+                    <button class="btn-sino" title="Alertar esquecimento" onclick="enviarAlerta('${p.id}', '${p.nome}')">
                         <i class="fa-solid fa-bell"></i>
                     </button>
                     <p class="portal-nome">${p.nome}</p>
                     <p class="acesso-email">${p.email}</p>
                     <div id="badge-${p.id}" class="status-badge free">LIVRE</div>
                     <div id="user-${p.id}" class="user-info"></div>
-                    <button id="btn-${p.id}" class="main-btn btn-entrar" onclick="toggleAcesso('${p.id}')">Entrar</button>
+                    <button id="btn-${p.id}" class="main-btn btn-entrar" onclick="gerenciarAcesso('${p.id}')">Entrar</button>
                 </div>
             `;
         });
 
-        // Lógica de Entrar/Sair
-        window.toggleAcesso = (id) => {
-            const perfil = document.getElementById('selectPerfil').value;
-            const btn = document.getElementById(`btn-${id}`);
-            if (!perfil && btn.innerText === "Entrar") return alert("Selecione seu nome!");
+        // 2. Lógica de Entrar/Sair
+        window.gerenciarAcesso = (id) => {
+            const nomeLogado = document.getElementById('selectPerfil').value;
+            const btnAcao = document.getElementById(`btn-${id}`);
+            
+            if (!nomeLogado && btnAcao.innerText === "Entrar") {
+                alert("Por favor, selecione seu nome no topo da página.");
+                return;
+            }
 
-            const refAcesso = ref(db, 'portais/' + id);
-            if (btn.innerText === "Entrar") {
-                set(refAcesso, { ocupado: true, usuario: perfil });
+            const refNoBanco = ref(db, 'portais/' + id);
+            
+            if (btnAcao.innerText === "Entrar") {
+                set(refNoBanco, { ocupado: true, usuario: nomeLogado });
             } else {
-                set(refAcesso, { ocupado: false, usuario: "" });
+                set(refNoBanco, { ocupado: false, usuario: "" });
             }
         };
 
-        // Função para ENVIAR Alerta
-        window.enviarAlerta = (id, portal) => {
-            const perfil = document.getElementById('selectPerfil').value || "Alguém";
-            set(ref(db, 'alerta_geral'), {
-                id: id,
-                msg: `${perfil} está chamando no ${portal}!`,
+        // 3. Função de Alerta (Sino)
+        window.enviarAlerta = (idCard, nomePortal) => {
+            const quemChamou = document.getElementById('selectPerfil').value || "Alguém";
+            set(ref(db, 'alerta_vaga'), {
+                idOrigem: idCard,
+                quemEnviou: meuIdNavegador,
+                texto: `${quemChamou} está solicitando o portal ${nomePortal}`,
                 timestamp: serverTimestamp()
             });
         };
 
-        // Escutar ACESSOS
-        portais.forEach(p => {
-            onValue(ref(db, 'portais/' + p.id), (snap) => {
-                const data = snap.val() || { ocupado: false };
+        // 4. Ouvir mudanças nos Portais
+        listaPortais.forEach(p => {
+            onValue(ref(db, 'portais/' + p.id), (snapshot) => {
+                const info = snapshot.val() || { ocupado: false, usuario: "" };
                 const card = document.getElementById(`card-${p.id}`);
                 const badge = document.getElementById(`badge-${p.id}`);
-                const user = document.getElementById(`user-${p.id}`);
+                const userArea = document.getElementById(`user-${p.id}`);
                 const btn = document.getElementById(`btn-${p.id}`);
 
-                if (data.ocupado) {
+                if (info.ocupado) {
                     card.className = "card busy";
                     badge.className = "status-badge busy";
                     badge.innerText = "OCUPADO";
-                    user.innerText = "Por: " + data.usuario;
+                    userArea.innerText = "Em uso por: " + info.usuario;
                     btn.innerText = "Sair";
                     btn.className = "main-btn btn-sair";
                 } else {
                     card.className = "card free";
                     badge.className = "status-badge free";
                     badge.innerText = "LIVRE";
-                    user.innerText = "";
+                    userArea.innerText = "";
                     btn.innerText = "Entrar";
                     btn.className = "main-btn btn-entrar";
                 }
             });
         });
 
-        // som de alerta (Beep)
-        const playBeep = () => {
-            const context = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = context.createOscillator();
+        // 5. Função de Som (Beep)
+        const dispararBeep = () => {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, context.currentTime);
-            osc.connect(context.destination);
+            osc.frequency.value = 880; 
             osc.start();
-            osc.stop(context.currentTime + 0.5);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.8);
+            osc.stop(audioCtx.currentTime + 0.8);
         };
 
-        // Escutar ALERTAS (Sino)
-        onValue(ref(db, 'alerta_geral'), (snap) => {
-            const alerta = snap.val();
+        // 6. Ouvir ALERTAS (com filtro para não apitar no próprio)
+        onValue(ref(db, 'alerta_vaga'), (snapshot) => {
+            const alerta = snapshot.val();
             if (!alerta) return;
 
-            // Tocar som e vibrar
-            playBeep();
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            // Se fui eu que cliquei, não faz nada
+            if (alerta.quemEnviou === meuIdNavegador) return;
 
-            // Animação visual no card específico
-            const cardAlt = document.getElementById(`card-${alerta.id}`);
-            if (cardAlt) {
-                cardAlt.classList.add('animar-alerta');
-                setTimeout(() => cardAlt.classList.remove('animar-alerta'), 2000);
+            // Se for outra pessoa:
+            dispararBeep();
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+
+            const cardAlvo = document.getElementById(`card-${alerta.idOrigem}`);
+            if (cardAlvo) {
+                cardAlvo.classList.add('animar-alerta');
+                setTimeout(() => cardAlvo.classList.remove('animar-alerta'), 2000);
             }
         });
-
     </script>
 </body>
 </html>
