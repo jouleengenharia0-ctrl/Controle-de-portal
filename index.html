@@ -2,66 +2,201 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Acesso Portal Celpe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Acessos Joule</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f4f4f9; }
-        .container { margin-top: 100px; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .disponivel { background-color: #2ecc71; color: white; }
-        .indisponivel { background-color: #e74c3c; color: white; }
-        button { padding: 15px 30px; font-size: 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #btnSair { background: #34495e; color: white; }
+        :root {
+            --disponivel: #27ae60;
+            --ocupado: #c0392b;
+            --alerta: #f39c12;
+            --dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: var(--dark); }
+        h1 { text-align: center; }
+        
+        .perfil-container { background: white; padding: 20px; border-radius: 10px; shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }
+        select { padding: 10px; font-size: 16px; border-radius: 5px; width: 250px; border: 2px solid #ddd; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        .card { background: white; border-radius: 12px; padding: 20px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 8px solid var(--disponivel); transition: 0.3s; }
+        .card.busy { border-top-color: var(--ocupado); }
+        
+        /* Estilo do Sino de Alerta */
+        .btn-sino { position: absolute; top: 15px; right: 15px; cursor: pointer; color: #ccc; font-size: 1.2rem; transition: 0.2s; border: none; background: none; }
+        .card.busy .btn-sino { color: var(--alerta); display: block; }
+        .card.free .btn-sino { display: none; }
+        .btn-sino:hover { transform: scale(1.2); color: #e67e22; }
+
+        .portal-nome { font-size: 1.2rem; font-weight: bold; margin: 0; }
+        .acesso-email { color: #666; font-size: 0.85rem; margin-bottom: 15px; }
+        
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 15px; }
+        .status-badge.free { background: #eafaf1; color: var(--disponivel); }
+        .status-badge.busy { background: #fdedec; color: var(--ocupado); }
+
+        .user-info { font-style: italic; font-size: 0.9rem; margin-bottom: 15px; height: 20px; font-weight: bold; }
+
+        button.main-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-entrar { background: var(--disponivel); color: white; }
+        .btn-sair { background: var(--dark); color: white; }
+        
+        /* Animação de tremer quando recebe alerta */
+        @keyframes tremer {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, 1px) rotate(0deg); }
+        }
+        .animar-alerta { animation: tremer 0.5s; animation-iteration-count: 4; }
     </style>
 </head>
 <body>
 
-    <div id="statusCard" class="container disponivel">
-        <h1 id="statusTexto">ACESSO DISPONÍVEL</h1>
-        <button id="btnEntrar" onclick="mudarStatus(true)">ENTRAR NO ACESSO</button>
-        <button id="btnSair" onclick="mudarStatus(false)" style="display:none;">SAIR / LIBERAR</button>
+    <h1>Painel Joule Eco</h1>
+
+    <div class="perfil-container">
+        <label><strong>Quem é você?</strong></label><br>
+        <select id="selectPerfil">
+            <option value="">Selecione seu nome...</option>
+            <option value="Gabriel">Gabriel</option>
+            <option value="Weslly">Weslly</option>
+            <option value="Vitor">Vitor</option>
+            <option value="Matheus">Matheus</option>
+            <option value="Alexandre">Alexandre</option>
+            <option value="Iara">Iara</option>
+            <option value="Aparecida">Aparecida</option>
+            <option value="Cristiane">Cristiane</option>
+            <option value="Ednalda">Ednalda</option>
+        </select>
+        <p style="font-size: 0.8rem; color: #888;">Clique no sino <i class="fa-solid fa-bell"></i> para alertar quem esqueceu de sair.</p>
     </div>
+
+    <div class="grid" id="portalGrid">
+        </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // COLE AS SUAS CONFIGURAÇÕES AQUI ABAIXO
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
-            authDomain: "SEU_PROJETO.firebaseapp.com",
-            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com", // Já peguei da sua imagem!
+            authDomain: "controle-b334e.firebaseapp.com",
+            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com",
             projectId: "controle-b334e",
             storageBucket: "controle-b334e.appspot.com",
-            messagingSenderId: "SEU_ID",
-            appId: "SEU_ID_APP"
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const statusRef = ref(db, 'portal/acessoX');
 
-        window.mudarStatus = (valor) => {
-            set(statusRef, valor);
+        const portais = [
+            { id: 'celpe-joule', nome: 'CELPE', email: 'joule@joule.eco.br' },
+            { id: 'celpe-portal', nome: 'CELPE', email: 'portal@joule.eco.br' },
+            { id: 'cosern-joule', nome: 'COSERN', email: 'joule@joule.eco.br' },
+            { id: 'cosern-portal', nome: 'COSERN', email: 'portal@joule.eco.br' }
+        ];
+
+        // Criar cards na tela
+        const grid = document.getElementById('portalGrid');
+        portais.forEach(p => {
+            grid.innerHTML += `
+                <div id="card-${p.id}" class="card free">
+                    <button class="btn-sino" onclick="enviarAlerta('${p.id}', '${p.nome}')">
+                        <i class="fa-solid fa-bell"></i>
+                    </button>
+                    <p class="portal-nome">${p.nome}</p>
+                    <p class="acesso-email">${p.email}</p>
+                    <div id="badge-${p.id}" class="status-badge free">LIVRE</div>
+                    <div id="user-${p.id}" class="user-info"></div>
+                    <button id="btn-${p.id}" class="main-btn btn-entrar" onclick="toggleAcesso('${p.id}')">Entrar</button>
+                </div>
+            `;
+        });
+
+        // Lógica de Entrar/Sair
+        window.toggleAcesso = (id) => {
+            const perfil = document.getElementById('selectPerfil').value;
+            const btn = document.getElementById(`btn-${id}`);
+            if (!perfil && btn.innerText === "Entrar") return alert("Selecione seu nome!");
+
+            const refAcesso = ref(db, 'portais/' + id);
+            if (btn.innerText === "Entrar") {
+                set(refAcesso, { ocupado: true, usuario: perfil });
+            } else {
+                set(refAcesso, { ocupado: false, usuario: "" });
+            }
         };
 
-        onValue(statusRef, (snapshot) => {
-            const ocupado = snapshot.val();
-            const card = document.getElementById('statusCard');
-            const texto = document.getElementById('statusTexto');
-            const btnEntrar = document.getElementById('btnEntrar');
-            const btnSair = document.getElementById('btnSair');
+        // Função para ENVIAR Alerta
+        window.enviarAlerta = (id, portal) => {
+            const perfil = document.getElementById('selectPerfil').value || "Alguém";
+            set(ref(db, 'alerta_geral'), {
+                id: id,
+                msg: `${perfil} está chamando no ${portal}!`,
+                timestamp: serverTimestamp()
+            });
+        };
 
-            if (ocupado) {
-                card.className = "container indisponivel";
-                texto.innerText = "ACESSO INDISPONÍVEL";
-                btnEntrar.style.display = "none";
-                btnSair.style.display = "inline-block";
-            } else {
-                card.className = "container disponivel";
-                texto.innerText = "ACESSO DISPONÍVEL";
-                btnEntrar.style.display = "inline-block";
-                btnSair.style.display = "none";
+        // Escutar ACESSOS
+        portais.forEach(p => {
+            onValue(ref(db, 'portais/' + p.id), (snap) => {
+                const data = snap.val() || { ocupado: false };
+                const card = document.getElementById(`card-${p.id}`);
+                const badge = document.getElementById(`badge-${p.id}`);
+                const user = document.getElementById(`user-${p.id}`);
+                const btn = document.getElementById(`btn-${p.id}`);
+
+                if (data.ocupado) {
+                    card.className = "card busy";
+                    badge.className = "status-badge busy";
+                    badge.innerText = "OCUPADO";
+                    user.innerText = "Por: " + data.usuario;
+                    btn.innerText = "Sair";
+                    btn.className = "main-btn btn-sair";
+                } else {
+                    card.className = "card free";
+                    badge.className = "status-badge free";
+                    badge.innerText = "LIVRE";
+                    user.innerText = "";
+                    btn.innerText = "Entrar";
+                    btn.className = "main-btn btn-entrar";
+                }
+            });
+        });
+
+        // som de alerta (Beep)
+        const playBeep = () => {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, context.currentTime);
+            osc.connect(context.destination);
+            osc.start();
+            osc.stop(context.currentTime + 0.5);
+        };
+
+        // Escutar ALERTAS (Sino)
+        onValue(ref(db, 'alerta_geral'), (snap) => {
+            const alerta = snap.val();
+            if (!alerta) return;
+
+            // Tocar som e vibrar
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            // Animação visual no card específico
+            const cardAlt = document.getElementById(`card-${alerta.id}`);
+            if (cardAlt) {
+                cardAlt.classList.add('animar-alerta');
+                setTimeout(() => cardAlt.classList.remove('animar-alerta'), 2000);
             }
         });
+
     </script>
 </body>
 </html>
