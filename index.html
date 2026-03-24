@@ -48,11 +48,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIGURAÇÕES BASEADAS NA SUA IMAGEM
         const firebaseConfig = {
             apiKey: "AIzaSyD2Uf5nhtTE_Tv5gHjFFeuABhJySmnTkEU",
             authDomain: "contador-de-projeto.firebaseapp.com",
-            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com/", // Link padrão para us-central1
+            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com/",
             projectId: "contador-de-projeto",
             storageBucket: "contador-de-projeto.firebasestorage.app",
             messagingSenderId: "1094895190178",
@@ -99,6 +98,7 @@
         });
 
         function formatarTempo(ms) {
+            if (ms < 0) ms = 0;
             const seg = Math.floor(ms / 1000);
             const h = Math.floor(seg / 3600);
             const m = Math.floor((seg % 3600) / 60);
@@ -106,6 +106,7 @@
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
+        // INTERVALO DE ATUALIZAÇÃO DO CRONÔMETRO
         setInterval(() => {
             portaisInfo.forEach(p => {
                 const entrada = temposDeEntrada[p.id];
@@ -139,17 +140,22 @@
             }, { onlyOnce: true });
         };
 
+        // SINCRONIZAÇÃO COM CORREÇÃO DE TIMEZONE/TIMESTAMP
         portaisInfo.forEach(p => {
             onValue(ref(db, 'acessos/' + p.id), (snap) => {
                 const d = snap.val() || { status: 'livre', user: '', inicio: null };
                 const card = document.getElementById(`card-${p.id}`);
                 const userBox = document.getElementById(`user-${p.id}`);
                 const btn = document.getElementById(`btn-${p.id}`);
+                
                 if (d.status === 'ocupado') {
                     card.className = "card busy";
                     userBox.innerHTML = `<i class="fa-solid fa-user-lock"></i> ${d.user}`;
                     btn.innerText = "Sair"; btn.className = "action-btn btn-sair";
-                    temposDeEntrada[p.id] = d.inicio || Date.now();
+                    
+                    // CORREÇÃO AQUI: Se o Firebase já tiver o tempo, usamos ele. 
+                    // Se acabou de clicar e o serverTimestamp ainda não voltou, usamos o Date.now() momentaneamente.
+                    temposDeEntrada[p.id] = d.inicio ? d.inicio : Date.now();
                 } else {
                     card.className = "card";
                     userBox.innerHTML = "Livre";
