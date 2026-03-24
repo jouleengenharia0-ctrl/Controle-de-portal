@@ -10,7 +10,6 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: var(--dark); }
         h1 { text-align: center; color: var(--dark); margin-bottom: 10px; }
         
-        /* Container de Login */
         .login-box { 
             background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
             margin: 0 auto 30px auto; max-width: 450px; text-align: center; 
@@ -18,97 +17,74 @@
         .user-logado-info { font-size: 1.2rem; font-weight: bold; color: #2980b9; }
         .btn-logout { background: none; border: none; color: #e74c3c; cursor: pointer; text-decoration: underline; display: block; width: 100%; margin-top: 10px; }
 
-        /* Grid e Estacionamento de Portais */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; border-radius: 15px; padding: 20px; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.05); border-top: 10px solid var(--disponivel); transition: 0.3s; }
         .card.busy { border-top-color: var(--ocupado); }
 
-        /* Botão do Sino */
+        .timer-badge { display: block; font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; font-weight: bold; height: 18px; }
+        .card.busy .timer-badge { color: #e74c3c; }
+
         .btn-sino { position: absolute; top: 15px; right: 15px; cursor: pointer; border: none; background: none; font-size: 1.6rem; color: var(--alerta); display: none; }
         .card.busy .btn-sino { display: block; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
         .portal-nome { font-size: 1.3rem; font-weight: bold; margin: 5px 0; }
         .acesso-email { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .user-at-moment { font-weight: 600; color: #34495e; height: 24px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .user-at-moment { font-weight: 600; color: #34495e; height: 24px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-        button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-entrar { background: var(--disponivel); color: white; }
         .btn-sair { background: var(--dark); color: white; }
-
-        /* Tremer card no alerta */
-        .shake-effect { animation: shake 0.5s infinite; }
-        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(5px); } 50% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
     <h1>Painel de Controle Joule</h1>
 
-    <div class="login-box" id="loginArea">
-        </div>
-
+    <div class="login-box" id="loginArea"></div>
     <div class="grid" id="mainGrid"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIGURAÇÕES DO SEU FIREBASE
+        // CONFIGURAÇÕES BASEADAS NA SUA IMAGEM
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "controle-b334e.firebaseapp.com",
-            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com",
-            projectId: "controle-b334e",
-            storageBucket: "controle-b334e.appspot.com",
-            messagingSenderId: "SEU_SENDER_ID",
-            appId: "SEU_APP_ID"
+            apiKey: "AIzaSyD2Uf5nhtTE_Tv5gHjFFeuABhJySmnTkEU",
+            authDomain: "contador-de-projeto.firebaseapp.com",
+            databaseURL: "https://controle-b334e-default-rtdb.firebaseio.com/", // Link padrão para us-central1
+            projectId: "contador-de-projeto",
+            storageBucket: "contador-de-projeto.firebasestorage.app",
+            messagingSenderId: "1094895190178",
+            appId: "1:1094895190178:web:ba42dc84351d7e8aab57fb",
+            measurementId: "G-Q4YZYNYJR0"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         const portaisInfo = [
-            { id: 'celpe1', nome: 'CELPE', email: 'joule@joule.eco.br' },
-            { id: 'celpe2', nome: 'CELPE', email: 'portal@joule.eco.br' },
-            { id: 'cosern1', nome: 'COSERN', email: 'joule@joule.eco.br' },
-            { id: 'cosern2', nome: 'COSERN', email: 'portal@joule.eco.br' }
+            { id: 'celpe1', nome: 'CELPE 1', email: 'joule@joule.eco.br' },
+            { id: 'celpe2', nome: 'CELPE 2', email: 'portal@joule.eco.br' },
+            { id: 'cosern1', nome: 'COSERN 1', email: 'joule@joule.eco.br' },
+            { id: 'cosern2', nome: 'COSERN 2', email: 'portal@joule.eco.br' }
         ];
 
-        // --- LÓGICA DE LOGIN ---
         let usuarioLogado = localStorage.getItem('joule_user') || "";
+        let temposDeEntrada = {}; 
 
         function atualizarUI_Login() {
             const area = document.getElementById('loginArea');
             if (!usuarioLogado) {
-                area.innerHTML = `
-                    <h3>Acesso ao Painel</h3>
-                    <select id="selectUser" onchange="logar(this.value)" style="padding:10px; width:80%; border-radius:5px;">
-                        <option value="">Escolha seu Perfil...</option>
-                        <option value="Gabriel">Gabriel</option><option value="Weslly">Weslly</option>
-                        <option value="Vitor">Vitor</option><option value="Matheus">Matheus</option>
-                        <option value="Alexandre">Alexandre</option><option value="Iara">Iara</option>
-                        <option value="Aparecida">Aparecida</option><option value="Cristiane">Cristiane</option>
-                        <option value="Ednalda">Ednalda</option>
-                    </select>
-                `;
+                area.innerHTML = `<h3>Acesso ao Painel</h3><select id="selectUser" onchange="logar(this.value)" style="padding:10px; width:80%; border-radius:5px;"><option value="">Escolha seu Perfil...</option><option value="Gabriel">Gabriel</option><option value="Weslly">Weslly</option><option value="Vitor">Vitor</option><option value="Matheus">Matheus</option><option value="Alexandre">Alexandre</option><option value="Iara">Iara</option><option value="Aparecida">Aparecida</option><option value="Cristiane">Cristiane</option><option value="Ednalda">Ednalda</option></select>`;
             } else {
-                area.innerHTML = `
-                    <p>Bem-vindo, <span class="user-logado-info">${usuarioLogado}</span></p>
-                    <button class="btn-logout" onclick="deslogar()">Trocar de Usuário</button>
-                `;
+                area.innerHTML = `<p>Bem-vindo, <span class="user-logado-info">${usuarioLogado}</span></p><button class="btn-logout" onclick="deslogar()">Trocar de Usuário</button>`;
             }
         }
 
-        window.logar = (nome) => {
-            if (nome) { localStorage.setItem('joule_user', nome); location.reload(); }
-        };
+        window.logar = (nome) => { if (nome) { localStorage.setItem('joule_user', nome); location.reload(); } };
+        window.deslogar = () => { localStorage.removeItem('joule_user'); location.reload(); };
 
-        window.deslogar = () => {
-            localStorage.removeItem('joule_user'); location.reload();
-        };
-
-        // --- RENDERIZAR PORTAIS ---
         const grid = document.getElementById('mainGrid');
         portaisInfo.forEach(p => {
             grid.innerHTML += `
@@ -117,66 +93,84 @@
                     <p class="portal-nome">${p.nome}</p>
                     <p class="acesso-email">${p.email}</p>
                     <div id="user-${p.id}" class="user-at-moment">Livre</div>
+                    <div id="timer-${p.id}" class="timer-badge"></div> 
                     <button id="btn-${p.id}" class="action-btn btn-entrar" onclick="acaoPortal('${p.id}')">Entrar</button>
-                </div>
-            `;
+                </div>`;
         });
 
-        // --- BOTÃO ENTRAR/SAIR ---
+        function formatarTempo(ms) {
+            const seg = Math.floor(ms / 1000);
+            const h = Math.floor(seg / 3600);
+            const m = Math.floor((seg % 3600) / 60);
+            const s = seg % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        setInterval(() => {
+            portaisInfo.forEach(p => {
+                const entrada = temposDeEntrada[p.id];
+                const timerElem = document.getElementById(`timer-${p.id}`);
+                if (entrada) {
+                    const diff = Date.now() - entrada;
+                    timerElem.innerText = "Em uso há: " + formatarTempo(diff);
+                } else {
+                    timerElem.innerText = "";
+                }
+            });
+        }, 1000);
+
         window.acaoPortal = (id) => {
             if (!usuarioLogado) return alert("Faça login primeiro!");
             const btn = document.getElementById(`btn-${id}`);
             const refP = ref(db, 'acessos/' + id);
-
             if (btn.innerText === "Entrar") {
-                set(refP, { status: 'ocupado', user: usuarioLogado });
+                set(refP, { status: 'ocupado', user: usuarioLogado, inicio: serverTimestamp() });
             } else {
-                set(refP, { status: 'livre', user: '' });
+                set(refP, { status: 'livre', user: '', inicio: null });
             }
         };
 
-        // --- SINO DE ALERTA DIRECIONADO ---
         window.alertarDono = (id) => {
             onValue(ref(db, 'acessos/' + id), (snap) => {
                 const data = snap.val();
                 if (data && data.status === 'ocupado') {
-                    set(ref(db, 'notificacao'), { para: data.user, de: usuarioLogado, time: Date.now() });
+                    set(ref(db, 'notificacoes/' + data.user), { de: usuarioLogado, time: Date.now() });
                 }
             }, { onlyOnce: true });
         };
 
-        // --- SINCRONIZAÇÃO FIREBASE ---
         portaisInfo.forEach(p => {
             onValue(ref(db, 'acessos/' + p.id), (snap) => {
-                const d = snap.val() || { status: 'livre', user: '' };
+                const d = snap.val() || { status: 'livre', user: '', inicio: null };
                 const card = document.getElementById(`card-${p.id}`);
                 const userBox = document.getElementById(`user-${p.id}`);
                 const btn = document.getElementById(`btn-${p.id}`);
-
                 if (d.status === 'ocupado') {
                     card.className = "card busy";
                     userBox.innerHTML = `<i class="fa-solid fa-user-lock"></i> ${d.user}`;
                     btn.innerText = "Sair"; btn.className = "action-btn btn-sair";
+                    temposDeEntrada[p.id] = d.inicio || Date.now();
                 } else {
                     card.className = "card";
                     userBox.innerHTML = "Livre";
                     btn.innerText = "Entrar"; btn.className = "action-btn btn-entrar";
+                    temposDeEntrada[p.id] = null;
                 }
             });
         });
 
-        // --- ESCUTAR ALERTAS (SÓ PARA O DONO) ---
-        onValue(ref(db, 'notificacao'), (snap) => {
-            const alertData = snap.val();
-            if (alertData && alertData.para === usuarioLogado) {
-                const audio = new AudioContext();
-                const osc = audio.createOscillator();
-                osc.connect(audio.destination);
-                osc.start(); osc.stop(audio.currentTime + 1.5);
-                if(navigator.vibrate) navigator.vibrate(800);
-                alert(`ATENÇÃO ${usuarioLogado.toUpperCase()}!\nEstão solicitando este portal.`);
-            }
-        });
+        if (usuarioLogado) {
+            onValue(ref(db, 'notificacoes/' + usuarioLogado), (snap) => {
+                const alertData = snap.val();
+                if (alertData && (Date.now() - alertData.time < 5000)) {
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    osc.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+                    alert(`⚠️ ALERTA DE ACESSO!\n\nOlá ${usuarioLogado.toUpperCase()},\no usuário "${alertData.de}" está solicitando este portal.`);
+                }
+            });
+        }
 
         atualizarUI_Login();
     </script>
