@@ -10,10 +10,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: var(--dark); }
         h1 { text-align: center; color: var(--dark); margin-bottom: 10px; }
         
-        .login-box { 
-            background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            margin: 0 auto 30px auto; max-width: 450px; text-align: center; 
-        }
+        .login-box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 0 auto 30px auto; max-width: 450px; text-align: center; }
         .user-logado-info { font-size: 1.2rem; font-weight: bold; color: #2980b9; }
         .btn-logout { background: none; border: none; color: #e74c3c; cursor: pointer; text-decoration: underline; display: block; width: 100%; margin-top: 10px; }
 
@@ -26,27 +23,70 @@
 
         .btn-sino { position: absolute; top: 15px; right: 15px; cursor: pointer; border: none; background: none; font-size: 1.6rem; color: var(--alerta); display: none; }
         .card.busy .btn-sino { display: block; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        @keyframes shake-extreme {
+            0% { transform: translate(0,0); }
+            10% { transform: translate(-8px, -8px); }
+            30% { transform: translate(8px, 5px); }
+            50% { transform: translate(-8px, 8px); }
+            100% { transform: translate(0,0); }
+        }
+        .shake-active { animation: shake-extreme 0.1s infinite !important; }
 
         .portal-nome { font-size: 1.3rem; font-weight: bold; margin: 5px 0; }
-        .acesso-email { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .user-at-moment { font-weight: 600; color: #34495e; height: 24px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-entrar { background: var(--disponivel); color: white; }
         .btn-sair { background: var(--dark); color: white; }
+
+        /* --- ESTILOS DOS JOGOS --- */
+        .game-container { max-width: 800px; margin: 40px auto; background: #2c3e50; border-radius: 15px; padding: 20px; color: white; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .game-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .game-tabs button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #34495e; color: white; font-weight: bold; }
+        .game-tabs button.active { background: #e67e22; }
+        .game-screen { display: none; flex-direction: column; align-items: center; }
+        .game-screen.active { display: flex; }
+        canvas { background: #1a1a1a; border: 4px solid #3e4f5f; border-radius: 8px; }
+        .score { font-size: 1.5rem; margin-bottom: 10px; color: #f1c40f; }
+        #tictactoe-board { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; margin: 20px auto; }
+        .cell { width: 100px; height: 100px; background: #ecf0f1; color: #2c3e50; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; cursor: pointer; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <h1>Painel de Controle Joule</h1>
-
     <div class="login-box" id="loginArea"></div>
     <div class="grid" id="mainGrid"></div>
 
+    <div class="game-container">
+        <h3>🕹️ Área de Espera (Versão Pro)</h3>
+        <div class="game-tabs">
+            <button onclick="showGame('snake')" id="tab-snake" class="active">Snake</button>
+            <button onclick="showGame('tictactoe')" id="tab-tictactoe">Jogo da Velha (IA)</button>
+            <button onclick="showGame('dino')" id="tab-dino">Dino</button>
+        </div>
+
+        <div id="snake" class="game-screen active">
+            <div class="score" id="snakeScore">Score: 0</div>
+            <canvas id="snakeCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div id="tictactoe" class="game-screen">
+            <div id="tictactoe-board"></div>
+            <p id="ttt-status">Tente ganhar se puder!</p>
+        </div>
+
+        <div id="dino" class="game-screen">
+            <div class="score" id="dinoScore">Score: 0</div>
+            <canvas id="dinoCanvas" width="600" height="150"></canvas>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD2Uf5nhtTE_Tv5gHjFFeuABhJySmnTkEU",
@@ -62,6 +102,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
         const portaisInfo = [
             { id: 'celpe1', nome: 'CELPE 1', email: 'joule@joule.eco.br' },
             { id: 'celpe2', nome: 'CELPE 2', email: 'portal@joule.eco.br' },
@@ -70,19 +114,19 @@
         ];
 
         let usuarioLogado = localStorage.getItem('joule_user') || "";
-        let temposDeEntrada = {}; 
+        let temposDeEntrada = {};
+
+        window.logar = (nome) => { if (nome) { localStorage.setItem('joule_user', nome); location.reload(); } };
+        window.deslogar = () => { localStorage.removeItem('joule_user'); location.reload(); };
 
         function atualizarUI_Login() {
             const area = document.getElementById('loginArea');
             if (!usuarioLogado) {
-                area.innerHTML = `<h3>Acesso ao Painel</h3><select id="selectUser" onchange="logar(this.value)" style="padding:10px; width:80%; border-radius:5px;"><option value="">Escolha seu Perfil...</option><option value="Gabriel">Gabriel</option><option value="Weslly">Weslly</option><option value="Vitor">Vitor</option><option value="Matheus">Matheus</option><option value="Alexandre">Alexandre</option><option value="Iara">Iara</option><option value="Aparecida">Aparecida</option><option value="Cristiane">Cristiane</option><option value="Ednalda">Ednalda</option></select>`;
+                area.innerHTML = `<h3>Acesso ao Painel</h3><select onchange="logar(this.value)" style="padding:10px; width:80%; border-radius:5px;"><option value="">Escolha seu Perfil...</option><option value="Gabriel">Gabriel</option><option value="Weslly">Weslly</option><option value="Vitor">Vitor</option><option value="Matheus">Matheus</option><option value="Alexandre">Alexandre</option><option value="Iara">Iara</option><option value="Aparecida">Aparecida</option><option value="Cristiane">Cristiane</option><option value="Ednalda">Ednalda</option></select>`;
             } else {
                 area.innerHTML = `<p>Bem-vindo, <span class="user-logado-info">${usuarioLogado}</span></p><button class="btn-logout" onclick="deslogar()">Trocar de Usuário</button>`;
             }
         }
-
-        window.logar = (nome) => { if (nome) { localStorage.setItem('joule_user', nome); location.reload(); } };
-        window.deslogar = () => { localStorage.removeItem('joule_user'); location.reload(); };
 
         const grid = document.getElementById('mainGrid');
         portaisInfo.forEach(p => {
@@ -90,38 +134,15 @@
                 <div id="card-${p.id}" class="card">
                     <button class="btn-sino" onclick="alertarDono('${p.id}')"><i class="fa-solid fa-bell"></i></button>
                     <p class="portal-nome">${p.nome}</p>
-                    <p class="acesso-email">${p.email}</p>
+                    <p style="font-size:0.85rem; color:#7f8c8d;">${p.email}</p>
                     <div id="user-${p.id}" class="user-at-moment">Livre</div>
                     <div id="timer-${p.id}" class="timer-badge"></div> 
                     <button id="btn-${p.id}" class="action-btn btn-entrar" onclick="acaoPortal('${p.id}')">Entrar</button>
                 </div>`;
         });
 
-        function formatarTempo(ms) {
-            if (ms < 0) ms = 0;
-            const seg = Math.floor(ms / 1000);
-            const h = Math.floor(seg / 3600);
-            const m = Math.floor((seg % 3600) / 60);
-            const s = seg % 60;
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-
-        // INTERVALO DE ATUALIZAÇÃO DO CRONÔMETRO
-        setInterval(() => {
-            portaisInfo.forEach(p => {
-                const entrada = temposDeEntrada[p.id];
-                const timerElem = document.getElementById(`timer-${p.id}`);
-                if (entrada) {
-                    const diff = Date.now() - entrada;
-                    timerElem.innerText = "Em uso há: " + formatarTempo(diff);
-                } else {
-                    timerElem.innerText = "";
-                }
-            });
-        }, 1000);
-
         window.acaoPortal = (id) => {
-            if (!usuarioLogado) return alert("Faça login primeiro!");
+            if (!usuarioLogado) return alert("Faça login!");
             const btn = document.getElementById(`btn-${id}`);
             const refP = ref(db, 'acessos/' + id);
             if (btn.innerText === "Entrar") {
@@ -135,27 +156,26 @@
             onValue(ref(db, 'acessos/' + id), (snap) => {
                 const data = snap.val();
                 if (data && data.status === 'ocupado') {
+                    if (data.user === "Gabriel") {
+                        document.body.classList.add('shake-active');
+                        setTimeout(() => document.body.classList.remove('shake-active'), 4000);
+                    }
                     set(ref(db, 'notificacoes/' + data.user), { de: usuarioLogado, time: Date.now() });
                 }
             }, { onlyOnce: true });
         };
 
-        // SINCRONIZAÇÃO COM CORREÇÃO DE TIMEZONE/TIMESTAMP
         portaisInfo.forEach(p => {
             onValue(ref(db, 'acessos/' + p.id), (snap) => {
                 const d = snap.val() || { status: 'livre', user: '', inicio: null };
                 const card = document.getElementById(`card-${p.id}`);
                 const userBox = document.getElementById(`user-${p.id}`);
                 const btn = document.getElementById(`btn-${p.id}`);
-                
                 if (d.status === 'ocupado') {
                     card.className = "card busy";
                     userBox.innerHTML = `<i class="fa-solid fa-user-lock"></i> ${d.user}`;
                     btn.innerText = "Sair"; btn.className = "action-btn btn-sair";
-                    
-                    // CORREÇÃO AQUI: Se o Firebase já tiver o tempo, usamos ele. 
-                    // Se acabou de clicar e o serverTimestamp ainda não voltou, usamos o Date.now() momentaneamente.
-                    temposDeEntrada[p.id] = d.inicio ? d.inicio : Date.now();
+                    temposDeEntrada[p.id] = d.inicio || Date.now();
                 } else {
                     card.className = "card";
                     userBox.innerHTML = "Livre";
@@ -165,20 +185,220 @@
             });
         });
 
+        setInterval(() => {
+            portaisInfo.forEach(p => {
+                const entrada = temposDeEntrada[p.id];
+                if (entrada) {
+                    const diff = Date.now() - entrada;
+                    const h = Math.floor(diff/3600000).toString().padStart(2,'0');
+                    const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+                    const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+                    document.getElementById(`timer-${p.id}`).innerText = `Em uso: ${h}:${m}:${s}`;
+                } else { document.getElementById(`timer-${p.id}`).innerText = ""; }
+            });
+        }, 1000);
+
         if (usuarioLogado) {
+            const perfisQueTremem = ["Aparecida", "Iara", "Alexandre", "Ednalda", "Cristiane"];
             onValue(ref(db, 'notificacoes/' + usuarioLogado), (snap) => {
                 const alertData = snap.val();
-                if (alertData && (Date.now() - alertData.time < 5000)) {
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = audioCtx.createOscillator();
-                    osc.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-                    alert(`⚠️ ALERTA DE ACESSO!\n\nOlá ${usuarioLogado.toUpperCase()},\no usuário "${alertData.de}" está solicitando este portal.`);
+                if (alertData && (Date.now() - alertData.time < 10000)) {
+                    if (perfisQueTremem.includes(usuarioLogado)) {
+                        document.body.classList.add('shake-active');
+                        setTimeout(() => document.body.classList.remove('shake-active'), 8000);
+                    }
+                    if (Notification.permission === "granted") {
+                        const n = new Notification("🚨 JOULE: SINALIZAÇÃO!", {
+                            body: `${alertData.de} precisa do portal!`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png",
+                            requireInteraction: true
+                        });
+                        n.onclick = () => { window.focus(); };
+                    }
+                    alert(`⚠️ ${usuarioLogado.toUpperCase()}, ${alertData.de} te sinalizou!`);
+                    remove(ref(db, 'notificacoes/' + usuarioLogado));
                 }
             });
         }
-
         atualizarUI_Login();
+    </script>
+
+    <script>
+        // --- GERENCIADOR DE JOGOS ---
+        function showGame(id) {
+            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.game-tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('tab-'+id).classList.add('active');
+            if(id === 'snake') startSnake();
+            if(id === 'tictactoe') startTTT();
+            if(id === 'dino') startDino();
+        }
+
+        // --- SNAKE PRO (Paredes Atravessáveis + Pontuação) ---
+        let snakeInt;
+        function startSnake() {
+            const canvas = document.getElementById('snakeCanvas');
+            const ctx = canvas.getContext('2d');
+            let score = 0;
+            let snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
+            let dx = 20, dy = 0;
+            let food = {x: 100, y: 100};
+            
+            if(snakeInt) clearInterval(snakeInt);
+            
+            function move() {
+                const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+                
+                // Atravessa Paredes
+                if(head.x >= 400) head.x = 0; if(head.x < 0) head.x = 380;
+                if(head.y >= 400) head.y = 0; if(head.y < 0) head.y = 380;
+
+                // Colisão com o corpo
+                if(snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+                    score = 0; snake = [{x: 200, y: 200}]; dx = 20; dy = 0;
+                }
+
+                snake.unshift(head);
+                if(head.x === food.x && head.y === food.y) {
+                    score += 10;
+                    document.getElementById('snakeScore').innerText = "Score: " + score;
+                    food = {x: Math.floor(Math.random()*19)*20, y: Math.floor(Math.random()*19)*20};
+                } else { snake.pop(); }
+            }
+
+            function draw() {
+                ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0,400,400);
+                ctx.fillStyle = "#2ecc71"; snake.forEach(s => ctx.fillRect(s.x, s.y, 19, 19));
+                ctx.fillStyle = "#e74c3c"; ctx.fillRect(food.x, food.y, 19, 19);
+            }
+
+            snakeInt = setInterval(() => { move(); draw(); }, 100);
+            window.onkeydown = (e) => {
+                if(e.key === "ArrowUp" && dy === 0) { dx = 0; dy = -20; }
+                if(e.key === "ArrowDown" && dy === 0) { dx = 0; dy = 20; }
+                if(e.key === "ArrowLeft" && dx === 0) { dx = -20; dy = 0; }
+                if(e.key === "ArrowRight" && dx === 0) { dx = 20; dy = 0; }
+            };
+        }
+
+        // --- TIC TAC TOE (IA MINIMAX - IMBATÍVEL) ---
+        let board = Array(9).fill(null);
+        function startTTT() {
+            const container = document.getElementById('tictactoe-board');
+            container.innerHTML = '';
+            board = Array(9).fill(null);
+            document.getElementById('ttt-status').innerText = "Sua vez (X)";
+            for(let i=0; i<9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => playerMove(i);
+                container.appendChild(cell);
+            }
+        }
+
+        function playerMove(i) {
+            if(!board[i]) {
+                board[i] = 'X'; updateBoard();
+                if(!checkWinner(board)) setTimeout(aiMove, 300);
+            }
+        }
+
+        function aiMove() {
+            let bestScore = -Infinity; let move;
+            for(let i=0; i<9; i++) {
+                if(!board[i]) {
+                    board[i] = 'O';
+                    let score = minimax(board, 0, false);
+                    board[i] = null;
+                    if(score > bestScore) { bestScore = score; move = i; }
+                }
+            }
+            board[move] = 'O'; updateBoard();
+            checkWinner(board);
+        }
+
+        function minimax(b, depth, isMaximizing) {
+            let res = evaluate(b);
+            if(res === 10) return res - depth;
+            if(res === -10) return res + depth;
+            if(!b.includes(null)) return 0;
+            
+            if(isMaximizing) {
+                let best = -Infinity;
+                for(let i=0; i<9; i++) if(!b[i]) { b[i]='O'; best=Math.max(best, minimax(b, depth+1, false)); b[i]=null; }
+                return best;
+            } else {
+                let best = Infinity;
+                for(let i=0; i<9; i++) if(!b[i]) { b[i]='X'; best=Math.min(best, minimax(b, depth+1, true)); b[i]=null; }
+                return best;
+            }
+        }
+
+        function evaluate(b) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for(let w of wins) {
+                if(b[w[0]] && b[w[0]]===b[w[1]] && b[w[0]]===b[w[2]]) return b[w[0]]==='O' ? 10 : -10;
+            }
+            return 0;
+        }
+
+        function updateBoard() {
+            const cells = document.querySelectorAll('.cell');
+            board.forEach((val, i) => cells[i].innerText = val || '');
+        }
+
+        function checkWinner(b) {
+            let res = evaluate(b);
+            if(res !== 0 || !b.includes(null)) {
+                document.getElementById('ttt-status').innerText = res===10 ? "IA Ganhou!" : (res===-10 ? "Você Ganhou!" : "Empate!");
+                setTimeout(startTTT, 2000);
+                return true;
+            }
+            return false;
+        }
+
+        // --- DINO PRO (Velocidade Progressiva) ---
+        let dinoInt;
+        function startDino() {
+            const canvas = document.getElementById('dinoCanvas');
+            const ctx = canvas.getContext('2d');
+            let dinoY = 130, dinoV = 0, score = 0, speed = 8;
+            let obstacles = [{x: 600}];
+            
+            if(dinoInt) clearInterval(dinoInt);
+            
+            window.onkeydown = (e) => { if(e.code === 'Space' && dinoY === 130) dinoV = -16; };
+
+            dinoInt = setInterval(() => {
+                ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0,600,150);
+                
+                dinoV += 1.2; dinoY += dinoV;
+                if(dinoY > 130) { dinoY = 130; dinoV = 0; }
+                
+                ctx.fillStyle = "#f1c40f"; ctx.fillRect(40, dinoY, 25, 25); // Dino
+
+                obstacles.forEach((ob, index) => {
+                    ob.x -= speed;
+                    ctx.fillStyle = "#e67e22"; ctx.fillRect(ob.x, 125, 20, 30);
+                    
+                    if(ob.x < -20) { 
+                        obstacles.splice(index, 1); 
+                        obstacles.push({x: 600 + Math.random()*200});
+                        score++; speed += 0.2;
+                        document.getElementById('dinoScore').innerText = "Score: " + score;
+                    }
+
+                    // Colisão
+                    if(ob.x > 40 && ob.x < 65 && dinoY > 105) {
+                        score = 0; speed = 8; obstacles = [{x: 600}];
+                        document.getElementById('dinoScore').innerText = "Score: 0";
+                    }
+                });
+            }, 30);
+        }
+
+        startSnake(); // Inicia o primeiro jogo
     </script>
 </body>
 </html>
